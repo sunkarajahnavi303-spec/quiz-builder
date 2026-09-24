@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Quiz Result - Quiz Builder</title>
+
+    <link rel="stylesheet" href="css/style.css">
+
+</head>
+
+<body>
+
+    <!-- ===============================
+         NAVBAR
+    ================================ -->
+
+    <header class="navbar">
+
+        <div class="logo">
+            Quiz Builder
+        </div>
+
+        <div class="nav-buttons">
+
+            <button onclick="goToUserDashboard()">
+                Dashboard
+            </button>
+
+            <button onclick="logout()">
+                Logout
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- ===============================
+         RESULT
+    ================================ -->
+
+    <main class="dashboard">
+
+        <div class="result-box">
+
+            <h1>
+                Quiz Completed!
+            </h1>
+
+            <p id="resultMessage">
+                Your result is ready.
+            </p>
+
+
+            <div class="score">
+
+                <span id="score">
+                    0
+                </span>
+
+                /
+                
+                <span id="totalQuestions">
+                    0
+                </span>
+
+            </div>
+
+
+            <h3 id="quizName">
+                Quiz
+            </h3>
+
+
+            <p id="userName">
+                User
+            </p>
+
+
+            <p id="resultDate">
+                Date
+            </p>
+
+
+            <br>
+
+
+            <button onclick="goToUserDashboard()">
+                Back to Dashboard
+            </button>
+
+        </div>
+
+    </main>
+
+
+    <script>
+
+        // =====================================
+        // GET CURRENT RESULT
+        // =====================================
+
+        const currentResult =
+            JSON.parse(
+                localStorage.getItem("currentScore")
+            );
+
+
+        // =====================================
+        // CHECK RESULT
+        // =====================================
+
+        if (!currentResult) {
+
+            alert("No result found.");
+
+            window.location.href =
+                "user.html";
+
+        }
+        else {
+
+            // Display score
+
+            document.getElementById(
+                "score"
+            ).innerText =
+                currentResult.score;
+
+
+            // Display total questions
+
+            document.getElementById(
+                "totalQuestions"
+            ).innerText =
+                currentResult.totalQuestions;
+
+
+            // Display quiz name
+
+            document.getElementById(
+                "quizName"
+            ).innerText =
+                currentResult.quizTitle;
+
+
+            // Display user name
+
+            document.getElementById(
+                "userName"
+            ).innerText =
+                "User: " +
+                currentResult.userName;
+
+
+            // Display date
+
+            document.getElementById(
+                "resultDate"
+            ).innerText =
+                "Completed on: " +
+                currentResult.date;
+
+
+            // Display message
+
+            document.getElementById(
+                "resultMessage"
+            ).innerText =
+                "Your quiz has been submitted successfully!";
+
+        }
+
+
+        // =====================================
+        // GO TO USER DASHBOARD
+        // =====================================
+
+        function goToUserDashboard() {
+
+            window.location.href =
+                "user.html";
+
+        }
+
+
+        // =====================================
+        // LOGOUT
+        // =====================================
+
+        function logout() {
+
+            localStorage.removeItem(
+                "loggedInUser"
+            );
+
+
+            window.location.href =
+                "index.html";
+
+        }
+
+    </script>
+
+</body>
+
+</html>

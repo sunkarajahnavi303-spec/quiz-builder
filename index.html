@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Quiz Builder</title>
+
+    <link rel="stylesheet" href="css/style.css">
+
+</head>
+
+<body>
+
+    <!-- ===============================
+         NAVIGATION BAR
+    ================================ -->
+
+    <header class="navbar">
+
+        <div class="logo">
+            Quiz Builder
+        </div>
+
+        <div class="nav-buttons">
+
+            <button onclick="goToLogin()">
+                Login
+            </button>
+
+            <button onclick="goToSignup()">
+                Sign Up
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- ===============================
+         HERO SECTION
+    ================================ -->
+
+    <main class="hero">
+
+        <div class="hero-content">
+
+            <h1>
+                Quiz Builder
+            </h1>
+
+            <p>
+                Create, manage and attempt quizzes easily.
+            </p>
+
+            <p>
+                A simple quiz management system for
+                administrators and users.
+            </p>
+
+
+            <div class="hero-buttons">
+
+                <button onclick="goToLogin()">
+                    Login
+                </button>
+
+                <button onclick="goToSignup()">
+                    Create Account
+                </button>
+
+            </div>
+
+        </div>
+
+    </main>
+
+
+    <!-- ===============================
+         JAVASCRIPT
+    ================================ -->
+
+    <script>
+
+        function goToLogin() {
+
+            window.location.href = "login.html";
+
+        }
+
+
+        function goToSignup() {
+
+            window.location.href = "signup.html";
+
+        }
+
+    </script>
+
+</body>
+
+</html>
+

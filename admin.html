@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Admin Dashboard - Quiz Builder</title>
+
+    <link rel="stylesheet" href="css/style.css">
+
+</head>
+
+<body>
+
+    <!-- ===============================
+         NAVIGATION BAR
+    ================================ -->
+
+    <header class="navbar">
+
+        <div class="logo">
+            Quiz Builder - Admin
+        </div>
+
+        <div class="nav-buttons">
+
+            <button onclick="logout()">
+                Logout
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- ===============================
+         ADMIN DASHBOARD
+    ================================ -->
+
+    <main class="dashboard">
+
+        <div class="dashboard-header">
+
+            <div>
+
+                <h1>
+                    Admin Dashboard
+                </h1>
+
+                <p>
+                    Welcome, Administrator!
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <!-- ===============================
+             ADMIN MODULE CARDS
+        ================================ -->
+
+        <div class="card-grid">
+
+
+            <!-- CREATE QUIZ -->
+
+            <div class="card">
+
+                <h3>
+                    Create Quiz
+                </h3>
+
+                <p>
+                    Create a new quiz and add questions
+                    with multiple-choice options.
+                </p>
+
+                <button onclick="goToCreateQuiz()">
+                    Create Quiz
+                </button>
+
+            </div>
+
+
+            <!-- MANAGE QUIZZES -->
+
+            <div class="card">
+
+                <h3>
+                    Manage Quizzes
+                </h3>
+
+                <p>
+                    View and manage the quizzes created
+                    by the administrator.
+                </p>
+
+                <button onclick="viewQuizzes()">
+                    View Quizzes
+                </button>
+
+            </div>
+
+
+            <!-- VIEW RESULTS -->
+
+            <div class="card">
+
+                <h3>
+                    View Results
+                </h3>
+
+                <p>
+                    View quiz results submitted by users.
+                </p>
+
+                <button onclick="viewResults()">
+                    View Results
+                </button>
+
+            </div>
+
+
+            <!-- USER MANAGEMENT -->
+
+            <div class="card">
+
+                <h3>
+                    User Management
+                </h3>
+
+                <p>
+                    View registered users in the
+                    Quiz Builder system.
+                </p>
+
+                <button onclick="viewUsers()">
+                    View Users
+                </button>
+
+            </div>
+
+        </div>
+
+    </main>
+
+
+    <!-- ===============================
+         ADMIN JAVASCRIPT
+    ================================ -->
+
+    <script src="js/admin.js"></script>
+
+</body>
+
+</html>

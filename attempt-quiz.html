@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Attempt Quiz - Quiz Builder</title>
+
+    <link rel="stylesheet" href="css/style.css">
+
+</head>
+
+<body>
+
+    <!-- ===============================
+         NAVBAR
+    ================================ -->
+
+    <header class="navbar">
+
+        <div class="logo">
+            Quiz Builder - Quiz
+        </div>
+
+        <div class="nav-buttons">
+
+            <button onclick="goToUserDashboard()">
+                Dashboard
+            </button>
+
+            <button onclick="logout()">
+                Logout
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- ===============================
+         QUIZ AREA
+    ================================ -->
+
+    <main class="dashboard">
+
+        <div class="dashboard-header">
+
+            <div>
+
+                <h1 id="quizTitle">
+                    Quiz
+                </h1>
+
+                <p id="quizDescription">
+                    Loading quiz...
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <!-- Questions will appear here -->
+
+        <div id="quizQuestions">
+
+        </div>
+
+
+        <!-- Submit button -->
+
+        <div style="text-align:center; margin-top:30px;">
+
+            <button onclick="submitQuiz()">
+                Submit Quiz
+            </button>
+
+        </div>
+
+    </main>
+
+
+    <script src="js/user.js"></script>
+
+    <script src="js/quiz.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Create Quiz - Quiz Builder</title>
+
+    <link rel="stylesheet" href="css/style.css">
+
+</head>
+
+<body>
+
+    <!-- ===============================
+         NAVIGATION BAR
+    ================================ -->
+
+    <header class="navbar">
+
+        <div class="logo">
+            Quiz Builder - Create Quiz
+        </div>
+
+        <div class="nav-buttons">
+
+            <button onclick="goToAdmin()">
+                Admin Dashboard
+            </button>
+
+            <button onclick="logout()">
+                Logout
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- ===============================
+         CREATE QUIZ SECTION
+    ================================ -->
+
+    <main class="dashboard">
+
+        <div class="dashboard-header">
+
+            <div>
+
+                <h1>
+                    Create New Quiz
+                </h1>
+
+                <p>
+                    Add quiz questions and answers.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <!-- ===============================
+             QUIZ DETAILS
+        ================================ -->
+
+        <div class="card">
+
+            <h3>
+                Quiz Details
+            </h3>
+
+            <br>
+
+            <label for="quizTitle">
+                Quiz Title
+            </label>
+
+            <input
+                type="text"
+                id="quizTitle"
+                placeholder="Enter quiz title"
+                style="width:100%; padding:12px; margin:10px 0 20px 0;"
+            >
+
+
+            <label for="quizDescription">
+                Quiz Description
+            </label>
+
+            <input
+                type="text"
+                id="quizDescription"
+                placeholder="Enter quiz description"
+                style="width:100%; padding:12px; margin:10px 0 20px 0;"
+            >
+
+        </div>
+
+
+        <br>
+
+
+        <!-- ===============================
+             ADD QUESTION
+        ================================ -->
+
+        <div class="card">
+
+            <h3>
+                Add Question
+            </h3>
+
+            <br>
+
+            <label for="questionText">
+                Question
+            </label>
+
+            <input
+                type="text"
+                id="questionText"
+                placeholder="Enter your question"
+                style="width:100%; padding:12px; margin:10px 0 20px 0;"
+            >
+
+
+            <label>
+                Option 1
+            </label>
+
+            <input
+                type="text"
+                id="option1"
+                placeholder="Enter option 1"
+                style="width:100%; padding:12px; margin:10px 0 15px 0;"
+            >
+
+
+            <label>
+                Option 2
+            </label>
+
+            <input
+                type="text"
+                id="option2"
+                placeholder="Enter option 2"
+                style="width:100%; padding:12px; margin:10px 0 15px 0;"
+            >
+
+
+            <label>
+                Option 3
+            </label>
+
+            <input
+                type="text"
+                id="option3"
+                placeholder="Enter option 3"
+                style="width:100%; padding:12px; margin:10px 0 15px 0;"
+            >
+
+
+            <label>
+                Option 4
+            </label>
+
+            <input
+                type="text"
+                id="option4"
+                placeholder="Enter option 4"
+                style="width:100%; padding:12px; margin:10px 0 15px 0;"
+            >
+
+
+            <label for="correctAnswer">
+                Correct Answer
+            </label>
+
+            <select
+                id="correctAnswer"
+                style="width:100%; padding:12px; margin:10px 0 20px 0;"
+            >
+
+                <option value="">
+                    Select correct option
+                </option>
+
+                <option value="0">
+                    Option 1
+                </option>
+
+                <option value="1">
+                    Option 2
+                </option>
+
+                <option value="2">
+                    Option 3
+                </option>
+
+                <option value="3">
+                    Option 4
+                </option>
+
+            </select>
+
+
+            <button onclick="addQuestion()">
+                Add Question
+            </button>
+
+        </div>
+
+
+        <br>
+
+
+        <!-- ===============================
+             QUESTION PREVIEW
+        ================================ -->
+
+        <div class="card">
+
+            <h3>
+                Questions Added
+            </h3>
+
+            <br>
+
+            <div id="questionList">
+
+                <p>
+                    No questions added yet.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <br>
+
+
+        <!-- ===============================
+             SAVE QUIZ
+        ================================ -->
+
+        <div style="text-align:center;">
+
+            <button onclick="saveQuiz()">
+                Save Quiz
+            </button>
+
+        </div>
+
+    </main>
+
+
+    <!-- ===============================
+         JAVASCRIPT
+    ================================ -->
+
+    <script src="js/admin.js"></script>
+
+    <script src="js/quiz.js"></script>
+
+</body>
+
+</html>
+

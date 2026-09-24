@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Login - Quiz Builder</title>
+
+    <link rel="stylesheet" href="css/style.css">
+
+</head>
+
+<body>
+
+    <!-- ===============================
+         LOGIN CONTAINER
+    ================================ -->
+
+    <div class="form-container">
+
+        <div class="form-box">
+
+            <h1>
+                Quiz Builder
+            </h1>
+
+            <h2>
+                Login
+            </h2>
+
+
+            <!-- LOGIN FORM -->
+
+            <form id="loginForm">
+
+                <label for="loginEmail">
+                    Email
+                </label>
+
+                <input
+                    type="email"
+                    id="loginEmail"
+                    placeholder="Enter your email"
+                    required
+                >
+
+
+                <label for="loginPassword">
+                    Password
+                </label>
+
+                <input
+                    type="password"
+                    id="loginPassword"
+                    placeholder="Enter your password"
+                    required
+                >
+
+
+                <button type="submit">
+                    Login
+                </button>
+
+            </form>
+
+
+            <!-- LOGIN MESSAGE -->
+
+            <p id="loginMessage"></p>
+
+
+            <!-- SIGNUP LINK -->
+
+            <p>
+                Don't have an account?
+
+                <a href="signup.html">
+                    Sign Up
+                </a>
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- AUTHENTICATION JAVASCRIPT -->
+
+    <script src="js/auth.js"></script>
+
+</body>
+
+</html>
