@@ -1,5 +1,7 @@
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+
+import { supabase } from './lib/supabase'
 
 import Navbar from './components/Navbar'
 import Login from './components/Login'
@@ -16,6 +18,91 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [currentUser, setCurrentUser] = useState(null)
   const [currentPage, setCurrentPage] = useState('login')
+  const [authLoading, setAuthLoading] = useState(true)
+
+  // Load user profile from Supabase
+  useEffect(() => {
+    let mounted = true
+
+    async function loadUser(session, event) {
+      if (!session) {
+        if (mounted) {
+          setCurrentUser(null)
+          setIsLoggedIn(false)
+          setCurrentPage('login')
+          setAuthLoading(false)
+        }
+        return
+      }
+
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('full_name, role')
+          .eq('id', session.user.id)
+          .single()
+
+        if (error || !profile) {
+          throw error || new Error('User profile not found.')
+        }
+
+        if (!mounted) return
+
+        setCurrentUser({
+          id: session.user.id,
+          name: profile.full_name || session.user.email,
+          email: session.user.email,
+          role: profile.role
+        })
+
+        setIsLoggedIn(true)
+
+        if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
+          setCurrentPage('dashboard')
+        }
+      } catch (error) {
+        console.error('Profile loading error:', error)
+
+        await supabase.auth.signOut()
+
+        if (mounted) {
+          setCurrentUser(null)
+          setIsLoggedIn(false)
+          setCurrentPage('login')
+          alert('Unable to load your profile. Please contact the administrator.')
+        }
+      } finally {
+        if (mounted) {
+          setAuthLoading(false)
+        }
+      }
+    }
+
+    // Restore existing login session
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (error) {
+        console.error('Session error:', error)
+      }
+
+      loadUser(data?.session || null, 'INITIAL_SESSION')
+    })
+
+    // Listen for login and logout changes
+    const {
+      data: { subscription }
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      setTimeout(() => {
+        if (mounted) {
+          loadUser(session, event)
+        }
+      }, 0)
+    })
+
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
+  }, [])
 
   // Handle successful login
   function handleLogin(user) {
@@ -25,7 +112,14 @@ function App() {
   }
 
   // Handle logout
-  function handleLogout() {
+  async function handleLogout() {
+    const { error } = await supabase.auth.signOut()
+
+    if (error) {
+      alert('Logout failed: ' + error.message)
+      return
+    }
+
     setIsLoggedIn(false)
     setCurrentUser(null)
     setCurrentPage('login')
@@ -34,6 +128,14 @@ function App() {
   // Handle signup
   function handleSignup() {
     setCurrentPage('login')
+  }
+
+  if (authLoading) {
+    return (
+      <div className="app-container">
+        <h2>Loading Quiz Builder...</h2>
+      </div>
+    )
   }
 
   return (

@@ -1,5 +1,6 @@
 
 import { useState } from 'react'
+import { supabase } from '../lib/supabase'
 
 function CreateQuiz() {
   const [title, setTitle] = useState('')
@@ -13,6 +14,7 @@ function CreateQuiz() {
   const [marks, setMarks] = useState(10)
 
   const [questions, setQuestions] = useState([])
+  const [saving, setSaving] = useState(false)
 
   function addQuestion() {
     if (
@@ -27,15 +29,15 @@ function CreateQuiz() {
 
     const newQuestion = {
       id: Date.now(),
-      title: questionTitle,
-      description: questionDescription,
+      title: questionTitle.trim(),
+      description: questionDescription.trim(),
       language,
       sampleInput,
       sampleOutput,
       marks: Number(marks)
     }
 
-    setQuestions([...questions, newQuestion])
+    setQuestions(previous => [...previous, newQuestion])
 
     setQuestionTitle('')
     setQuestionDescription('')
@@ -47,32 +49,80 @@ function CreateQuiz() {
     alert('Coding question added successfully!')
   }
 
-  function saveQuiz() {
+  async function saveQuiz() {
     if (!title.trim() || questions.length === 0) {
       alert('Enter a quiz title and add at least one question.')
       return
     }
 
-    const quizzes = JSON.parse(
-      localStorage.getItem('quizzes') || '[]'
-    )
+    if (saving) return
 
-    const newQuiz = {
-      id: Date.now(),
-      title: title.trim(),
-      description: description.trim(),
-      questions: questions
+    setSaving(true)
+
+    try {
+      // Get the currently logged-in admin
+      const {
+        data: { user },
+        error: userError
+      } = await supabase.auth.getUser()
+
+      if (userError || !user) {
+        throw new Error('Please login again before saving the quiz.')
+      }
+
+      // Save quiz details
+      const { data: newQuiz, error: quizError } = await supabase
+        .from('quizzes')
+        .insert({
+          title: title.trim(),
+          description: description.trim(),
+          created_by: user.id
+        })
+        .select()
+        .single()
+
+      if (quizError) {
+        throw quizError
+      }
+
+      // Save all questions using the new quiz ID
+      const questionRows = questions.map((q, index) => ({
+        quiz_id: newQuiz.id,
+        title: q.title,
+        description: q.description,
+        language: q.language,
+        sample_input: q.sampleInput,
+        sample_output: q.sampleOutput,
+        marks: q.marks,
+        question_order: index + 1
+      }))
+
+      const { error: questionError } = await supabase
+        .from('questions')
+        .insert(questionRows)
+
+      if (questionError) {
+        // Remove the quiz if its questions could not be saved
+        await supabase
+          .from('quizzes')
+          .delete()
+          .eq('id', newQuiz.id)
+
+        throw questionError
+      }
+
+      alert('Coding quiz saved successfully to Supabase!')
+
+      setTitle('')
+      setDescription('')
+      setQuestions([])
+
+    } catch (error) {
+      console.error('Quiz saving error:', error)
+      alert(error.message || 'Unable to save quiz. Please try again.')
+    } finally {
+      setSaving(false)
     }
-
-    quizzes.push(newQuiz)
-
-    localStorage.setItem('quizzes', JSON.stringify(quizzes))
-
-    alert('Coding quiz saved successfully!')
-
-    setTitle('')
-    setDescription('')
-    setQuestions([])
   }
 
   return (
@@ -209,8 +259,9 @@ function CreateQuiz() {
         type="button"
         className="save-quiz-button"
         onClick={saveQuiz}
+        disabled={saving}
       >
-        💾 Save Quiz
+        {saving ? 'Saving Quiz...' : '💾 Save Quiz'}
       </button>
 
     </div>

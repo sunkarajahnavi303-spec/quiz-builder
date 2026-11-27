@@ -1,47 +1,56 @@
 
 import { useState } from 'react'
+import { supabase } from '../lib/supabase'
 
 function Signup({ onSignup, onNavigate }) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  function handleSignup(e) {
+  async function handleSignup(e) {
     e.preventDefault()
 
-    const users = JSON.parse(
-      localStorage.getItem('quizUsers') || '[]'
-    )
+    if (loading) return
+
+    setLoading(true)
 
     const normalizedEmail = email.trim().toLowerCase()
+    const normalizedName = name.trim()
 
-    const existingUser = users.find(
-      (user) => user.email === normalizedEmail
-    )
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: normalizedEmail,
+        password,
+        options: {
+          data: {
+            full_name: normalizedName
+          }
+        }
+      })
 
-    if (existingUser) {
-      alert('Account already exists! Please login.')
-      return
+      if (error) {
+        throw error
+      }
+
+      if (data.session) {
+        alert('Student account created successfully! Please login.')
+        onSignup()
+      } else {
+        alert(
+          'Account created! Please check your email to confirm your account, then login.'
+        )
+        onNavigate('login')
+      }
+
+      setName('')
+      setEmail('')
+      setPassword('')
+    } catch (error) {
+      alert(error.message || 'Signup failed. Please try again.')
+    } finally {
+      setLoading(false)
     }
-
-    const newUser = {
-      name: name.trim(),
-      email: normalizedEmail,
-      password,
-      role: 'student'
-    }
-
-    users.push(newUser)
-
-    localStorage.setItem('quizUsers', JSON.stringify(users))
-
-    alert('Student account created successfully! Please login.')
-
-    onSignup()
-
-    setName('')
-    setEmail('')
-    setPassword('')
   }
 
   return (
@@ -76,11 +85,16 @@ function Signup({ onSignup, onNavigate }) {
           placeholder="Enter your password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          minLength={6}
           required
         />
 
-        <button type="submit" className="signup-button">
-          Create Student Account
+        <button
+          type="submit"
+          className="signup-button"
+          disabled={loading}
+        >
+          {loading ? 'Creating Account...' : 'Create Student Account'}
         </button>
       </form>
 

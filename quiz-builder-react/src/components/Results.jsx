@@ -1,25 +1,42 @@
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
 
 function Results({ currentUser }) {
-  const [allResults] = useState(() => {
-    try {
-      return JSON.parse(
-        localStorage.getItem('quizResults') || '[]'
-      )
-    } catch {
-      return []
+  const [results, setResults] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    async function fetchResults() {
+      if (!currentUser?.id) {
+        setResults([])
+        setLoading(false)
+        return
+      }
+
+      setLoading(true)
+      setError('')
+
+      const { data, error } = await supabase
+        .from('quiz_results')
+        .select('*')
+        .eq('student_id', currentUser.id)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching results:', error)
+        setError('Unable to load your results. Please try again.')
+        setResults([])
+      } else {
+        setResults(data || [])
+      }
+
+      setLoading(false)
     }
-  })
 
-  // Display only the logged-in student's results
-  const results = allResults.filter(
-    (result) =>
-      result.studentEmail?.toLowerCase() ===
-      currentUser?.email?.toLowerCase()
-  )
-
-  const sortedResults = results.slice().reverse()
+    fetchResults()
+  }, [currentUser?.id])
 
   const totalAttempts = results.length
 
@@ -27,12 +44,11 @@ function Results({ currentUser }) {
     ? (
         results.reduce(
           (sum, result) =>
-            sum + Number(
-              result.percentage ??
-              (result.totalMarks > 0
-                ? (result.score / result.totalMarks) * 100
-                : 0)
-            ),
+            sum + Number(result.percentage ?? (
+              Number(result.total_marks) > 0
+                ? (Number(result.score) / Number(result.total_marks)) * 100
+                : 0
+            )),
           0
         ) / totalAttempts
       ).toFixed(1)
@@ -41,8 +57,8 @@ function Results({ currentUser }) {
   const bestScore = totalAttempts > 0
     ? Math.max(
         ...results.map((result) =>
-          result.totalMarks > 0
-            ? (result.score / result.totalMarks) * 100
+          Number(result.total_marks) > 0
+            ? (Number(result.score) / Number(result.total_marks)) * 100
             : 0
         )
       ).toFixed(1)
@@ -69,7 +85,15 @@ function Results({ currentUser }) {
         </p>
       </div>
 
-      {totalAttempts === 0 ? (
+      {loading ? (
+        <div className="results-empty">
+          <h3>Loading your results...</h3>
+        </div>
+      ) : error ? (
+        <div className="results-empty">
+          <h3>{error}</h3>
+        </div>
+      ) : totalAttempts === 0 ? (
         <div className="results-empty">
           <div className="empty-results-icon">📊</div>
 
@@ -111,28 +135,33 @@ function Results({ currentUser }) {
 
             <h3>📚 Your Quiz History</h3>
 
-            {sortedResults.map((result, index) => {
+            {results.map((result) => {
 
               const percentage = Number(
-                result.percentage ??
-                (result.totalMarks > 0
-                  ? (result.score / result.totalMarks) * 100
-                  : 0)
+                result.percentage ?? (
+                  Number(result.total_marks) > 0
+                    ? (Number(result.score) / Number(result.total_marks)) * 100
+                    : 0
+                )
               )
+
+              const resultDate = result.created_at
+                ? new Date(result.created_at).toLocaleString()
+                : 'Date unavailable'
 
               return (
                 <div
                   className="result-card"
-                  key={result.id || index}
+                  key={result.id}
                 >
 
                   <div className="result-card-header">
 
                     <div>
-                      <h3>{result.quizTitle}</h3>
+                      <h3>{result.quiz_title || 'Quiz'}</h3>
 
                       <p className="result-date">
-                        📅 {result.date}
+                        📅 {resultDate}
                       </p>
                     </div>
 
@@ -147,7 +176,7 @@ function Results({ currentUser }) {
 
                     <div className="result-score">
                       <h2>
-                        {result.score} / {result.totalMarks}
+                        {result.score} / {result.total_marks}
                       </h2>
 
                       <p>Marks Obtained</p>

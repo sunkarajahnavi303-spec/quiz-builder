@@ -1,39 +1,87 @@
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { supabase } from '../lib/supabase'
 
 function ManageQuizzes() {
-  const [quizzes, setQuizzes] = useState(() => {
-    try {
-      return JSON.parse(
-        localStorage.getItem('quizzes') || '[]'
-      )
-    } catch {
-      return []
-    }
-  })
+  const [quizzes, setQuizzes] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  // Delete a quiz
-  function deleteQuiz(id) {
+  // Load quizzes and their questions from Supabase
+  async function fetchQuizzes() {
+    setLoading(true)
+
+    try {
+      const { data, error } = await supabase
+        .from('quizzes')
+        .select(`
+          id,
+          title,
+          description,
+          created_at,
+          questions (
+            id,
+            title,
+            description,
+            language,
+            marks,
+            question_order,
+            sample_input,
+            sample_output
+          )
+        `)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+
+      const formattedQuizzes = (data || []).map(quiz => ({
+        ...quiz,
+        questions: (quiz.questions || [])
+          .sort((a, b) => a.question_order - b.question_order)
+          .map(question => ({
+            ...question,
+            sampleInput: question.sample_input,
+            sampleOutput: question.sample_output
+          }))
+      }))
+
+      setQuizzes(formattedQuizzes)
+    } catch (error) {
+      console.error('Quiz loading error:', error)
+      alert(error.message || 'Unable to load quizzes.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchQuizzes()
+  }, [])
+
+  // Delete a quiz from Supabase
+  async function deleteQuiz(id) {
     const confirmDelete = window.confirm(
       'Are you sure you want to delete this quiz?'
     )
 
-    if (!confirmDelete) {
-      return
+    if (!confirmDelete) return
+
+    try {
+      const { error } = await supabase
+        .from('quizzes')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+
+      setQuizzes(previous =>
+        previous.filter(quiz => quiz.id !== id)
+      )
+
+      alert('Quiz deleted successfully!')
+    } catch (error) {
+      console.error('Quiz deletion error:', error)
+      alert(error.message || 'Unable to delete quiz.')
     }
-
-    const updatedQuizzes = quizzes.filter(
-      (quiz) => quiz.id !== id
-    )
-
-    setQuizzes(updatedQuizzes)
-
-    localStorage.setItem(
-      'quizzes',
-      JSON.stringify(updatedQuizzes)
-    )
-
-    alert('Quiz deleted successfully!')
   }
 
   return (
@@ -57,7 +105,9 @@ function ManageQuizzes() {
           Total Quizzes: {quizzes.length}
         </h3>
 
-        {quizzes.length === 0 ? (
+        {loading ? (
+          <p>Loading quizzes...</p>
+        ) : quizzes.length === 0 ? (
           <div className="results-empty">
             <div className="empty-results-icon">📭</div>
 
@@ -164,4 +214,5 @@ function ManageQuizzes() {
     </div>
   )
 }
+
 export default ManageQuizzes

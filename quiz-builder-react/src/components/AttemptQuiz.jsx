@@ -4,24 +4,12 @@ import {
   FaceDetector,
   FilesetResolver
 } from '@mediapipe/tasks-vision'
+import { supabase } from '../lib/supabase'
 
 function AttemptQuiz({ currentUser }) {
-  const [quizzes] = useState(() => {
-    try {
-      const savedQuizzes = JSON.parse(
-        localStorage.getItem('quizzes') || '[]'
-      )
-
-      return savedQuizzes.filter(
-        quiz =>
-          quiz &&
-          Array.isArray(quiz.questions) &&
-          quiz.questions.length > 0
-      )
-    } catch {
-      return []
-    }
-  })
+  // LOAD QUIZZES FROM SUPABASE
+  const [quizzes, setQuizzes] = useState([])
+  const [quizzesLoading, setQuizzesLoading] = useState(true)
 
   const [selectedQuiz, setSelectedQuiz] = useState(null)
   const [selectedQuestion, setSelectedQuestion] = useState(0)
@@ -30,6 +18,7 @@ function AttemptQuiz({ currentUser }) {
   const [answers, setAnswers] = useState({})
   const [finished, setFinished] = useState(false)
   const [terminated, setTerminated] = useState(false)
+  const [savingResult, setSavingResult] = useState(false)
 
   // CAMERA MONITORING
   const [cameraStream, setCameraStream] = useState(null)
@@ -55,6 +44,79 @@ function AttemptQuiz({ currentUser }) {
 
   // VIOLATION HISTORY
   const examSessionIdRef = useRef(null)
+
+  // FETCH QUIZZES FROM SUPABASE
+  useEffect(() => {
+    let cancelled = false
+
+    async function fetchQuizzes() {
+      try {
+        const { data, error } = await supabase
+          .from('quizzes')
+          .select(`
+            id,
+            title,
+            description,
+            questions (
+              id,
+              title,
+              description,
+              language,
+              sample_input,
+              sample_output,
+              marks,
+              question_order
+            )
+          `)
+          .order('created_at', { ascending: false })
+
+        if (error) throw error
+
+        const formattedQuizzes = (data || [])
+          .map(quiz => ({
+            ...quiz,
+            questions: (quiz.questions || [])
+              .sort(
+                (a, b) =>
+                  Number(a.question_order || 0) -
+                  Number(b.question_order || 0)
+              )
+              .map(question => ({
+                ...question,
+                sampleInput: question.sample_input,
+                sampleOutput: question.sample_output
+              }))
+          }))
+          .filter(
+            quiz =>
+              quiz.questions &&
+              quiz.questions.length > 0
+          )
+
+        if (!cancelled) {
+          setQuizzes(formattedQuizzes)
+        }
+      } catch (error) {
+        console.error('Unable to load quizzes:', error)
+
+        if (!cancelled) {
+          alert(
+            error.message || 'Unable to load quizzes.'
+          )
+        }
+      } finally {
+        if (!cancelled) {
+          setQuizzesLoading(false)
+        }
+      }
+    }
+
+    fetchQuizzes()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   // DISPLAY CAMERA STREAM
   useEffect(() => {
@@ -130,44 +192,39 @@ function AttemptQuiz({ currentUser }) {
     setTabSwitchCount(count)
 
     const violation = {
-      id: `${Date.now()}-${count}`,
-
-      sessionId: examSessionIdRef.current,
-
-      studentName: currentUser?.name || 'Student',
-      studentEmail: currentUser?.email || '',
-
-      quizTitle: selectedQuiz?.title || 'Unknown Quiz',
-
+      session_id: examSessionIdRef.current,
+      student_id: currentUser?.id,
+      student_name: currentUser?.name || 'Student',
+      student_email: currentUser?.email || '',
+      quiz_id: selectedQuiz?.id,
+      quiz_title: selectedQuiz?.title || 'Unknown Quiz',
       reason: message,
-
-      violationNumber: count,
-
-      date: new Date().toLocaleString(),
-
-      timestamp: new Date().toISOString(),
-
-      status: count >= 3 ? 'Terminated' : 'Warning'
+      violation_number: count,
+      status: count >= 3 ? 'terminated' : 'warning',
+      occurred_at: new Date().toISOString()
     }
 
-    // SAVE VIOLATION HISTORY
-    try {
-      const previousHistory = JSON.parse(
-        localStorage.getItem('violationHistory') || '[]'
-      )
+    // SAVE VIOLATION TO SUPABASE
+    async function saveViolation() {
+      try {
+        if (!currentUser?.id) {
+          throw new Error('Student login information is missing.')
+        }
 
-      previousHistory.push(violation)
+        const { error } = await supabase
+          .from('violation_history')
+          .insert(violation)
 
-      localStorage.setItem(
-        'violationHistory',
-        JSON.stringify(previousHistory)
-      )
-    } catch (error) {
-      console.error(
-        'Unable to save violation history:',
-        error
-      )
+        if (error) throw error
+      } catch (error) {
+        console.error(
+          'Unable to save violation history:',
+          error
+        )
+      }
     }
+
+    saveViolation()
 
     if (count >= 3) {
       terminateExam()
@@ -441,7 +498,6 @@ function AttemptQuiz({ currentUser }) {
 
   // START QUIZ
   async function startQuiz(quiz) {
-    // CREATE UNIQUE EXAM SESSION
     examSessionIdRef.current = `${Date.now()}-${Math.random()
       .toString(36)
       .slice(2, 8)}`
@@ -577,8 +633,10 @@ function AttemptQuiz({ currentUser }) {
     )
   }
 
-  // FINISH QUIZ
-  function finishQuiz() {
+  // FINISH QUIZ AND SAVE RESULT TO SUPABASE
+  async function finishQuiz() {
+    if (savingResult) return
+
     if (
       Object.keys(answers).length !==
       selectedQuiz.questions.length
@@ -589,70 +647,53 @@ function AttemptQuiz({ currentUser }) {
       return
     }
 
+    if (!currentUser?.id) {
+      alert('Your login session is missing. Please log in again.')
+      return
+    }
+
+    setSavingResult(true)
+
     const totalMarks = getTotalMarks(selectedQuiz)
     const score = calculateScore()
 
+    const percentage = totalMarks > 0
+      ? Number(
+          ((score / totalMarks) * 100).toFixed(2)
+        )
+      : 0
+
     const result = {
-      id: Date.now(),
-      quizTitle: selectedQuiz.title,
-
-      studentName: currentUser?.name || 'Student',
-      studentEmail: currentUser?.email || '',
-
+      quiz_id: selectedQuiz.id,
+      student_id: currentUser.id,
+      quiz_title: selectedQuiz.title,
+      student_name: currentUser.name || 'Student',
+      student_email: currentUser.email || '',
       score,
-      totalMarks,
-
-      percentage: totalMarks > 0
-        ? Number(
-            ((score / totalMarks) * 100).toFixed(2)
-          )
-        : 0,
-
+      total_marks: totalMarks,
+      percentage,
       answers,
-
-      date: new Date().toLocaleString(),
-
-      tabSwitchCount,
-
-      sessionId: examSessionIdRef.current
+      tab_switch_count: tabSwitchCount,
+      session_id: examSessionIdRef.current
     }
 
     try {
-      const previousResults = JSON.parse(
-        localStorage.getItem('quizResults') || '[]'
-      )
+      const { error } = await supabase
+        .from('quiz_results')
+        .insert(result)
 
-      previousResults.push(result)
+      if (error) throw error
 
-      localStorage.setItem(
-        'quizResults',
-        JSON.stringify(previousResults)
-      )
+      securityActiveRef.current = false
 
-      const savedResults = JSON.parse(
-        localStorage.getItem('quizResults') || '[]'
-      )
+      stopCamera()
 
-      if (
-        savedResults.some(
-          item => item.id === result.id
-        )
-      ) {
-        securityActiveRef.current = false
+      setFinished(true)
 
-        stopCamera()
+      alert('Result saved successfully!')
 
-        setFinished(true)
-
-        alert('Result saved successfully!')
-
-        if (document.fullscreenElement) {
-          document.exitFullscreen().catch(() => {})
-        }
-      } else {
-        alert(
-          'Result could not be saved. Please try again.'
-        )
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {})
       }
     } catch (error) {
       console.error(
@@ -661,8 +702,10 @@ function AttemptQuiz({ currentUser }) {
       )
 
       alert(
-        'Unable to save result. Check browser storage.'
+        error.message || 'Unable to save result. Please try again.'
       )
+    } finally {
+      setSavingResult(false)
     }
   }
 
@@ -689,6 +732,8 @@ function AttemptQuiz({ currentUser }) {
       'Waiting for face detection...'
     )
 
+    setSavingResult(false)
+
     violationCountRef.current = 0
     terminatedRef.current = false
 
@@ -697,6 +742,19 @@ function AttemptQuiz({ currentUser }) {
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(() => {})
     }
+  }
+
+  // QUIZ LOADING
+  if (quizzesLoading) {
+    return (
+      <div className="attempt-page">
+        <div className="attempt-header">
+          <div className="attempt-icon">💻</div>
+          <h2>Attempt Coding Quiz</h2>
+          <p>Loading available quizzes...</p>
+        </div>
+      </div>
+    )
   }
 
   // NO QUIZZES
@@ -1180,9 +1238,9 @@ function AttemptQuiz({ currentUser }) {
           <button
             className="finish-quiz-button"
             onClick={finishQuiz}
-            disabled={!alreadySubmitted}
+            disabled={!alreadySubmitted || savingResult}
           >
-            Finish Quiz 🏆
+            {savingResult ? 'Saving Result...' : 'Finish Quiz 🏆'}
           </button>
         )}
       </div>

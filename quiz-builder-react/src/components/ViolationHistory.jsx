@@ -1,28 +1,35 @@
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
 
 function ViolationHistory() {
-  const [violations, setViolations] = useState(() => {
-    try {
-      return JSON.parse(
-        localStorage.getItem('violationHistory') || '[]'
-      ).reverse()
-    } catch {
-      return []
-    }
-  })
+  const [violations, setViolations] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
-  function refreshHistory() {
-    try {
-      setViolations(
-        JSON.parse(
-          localStorage.getItem('violationHistory') || '[]'
-        ).reverse()
-      )
-    } catch {
+  async function refreshHistory() {
+    setLoading(true)
+    setError('')
+
+    const { data, error } = await supabase
+      .from('violation_history')
+      .select('*')
+      .order('occurred_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching violation history:', error)
+      setError('Unable to load violation history. Please try again.')
       setViolations([])
+    } else {
+      setViolations(data || [])
     }
+
+    setLoading(false)
   }
+
+  useEffect(() => {
+    refreshHistory()
+  }, [])
 
   return (
     <div className="dashboard">
@@ -37,31 +44,39 @@ function ViolationHistory() {
       <div className="recent-activity-section">
         <h3>📋 Recorded Violations</h3>
 
-        <button onClick={refreshHistory}>
-          Refresh History
+        <button onClick={refreshHistory} disabled={loading}>
+          {loading ? 'Loading...' : 'Refresh History'}
         </button>
 
-        {violations.length === 0 ? (
+        {loading ? (
+          <div className="activity-empty">
+            <p>Loading violation records...</p>
+          </div>
+        ) : error ? (
+          <div className="activity-empty">
+            <p>{error}</p>
+          </div>
+        ) : violations.length === 0 ? (
           <div className="activity-empty">
             <p>No violations recorded yet.</p>
           </div>
         ) : (
-          violations.map((violation, index) => (
+          violations.map((violation) => (
             <div
               className="activity-card"
-              key={violation.id || index}
+              key={violation.id}
             >
               <div>
                 <h4>
-                  {violation.studentName || 'Unknown Student'}
+                  {violation.student_name || 'Unknown Student'}
                 </h4>
 
                 <p>
-                  Email: {violation.studentEmail || 'Not available'}
+                  Email: {violation.student_email || 'Not available'}
                 </p>
 
                 <p>
-                  Quiz: {violation.quizTitle || 'Unknown Quiz'}
+                  Quiz: {violation.quiz_title || 'Unknown Quiz'}
                 </p>
 
                 <p>
@@ -69,11 +84,13 @@ function ViolationHistory() {
                 </p>
 
                 <p>
-                  Date: {violation.date || 'Not available'}
+                  Date: {violation.occurred_at
+                    ? new Date(violation.occurred_at).toLocaleString()
+                    : 'Not available'}
                 </p>
 
                 <p>
-                  Violation Number: {violation.violationNumber || '-'}
+                  Violation Number: {violation.violation_number || '-'}
                 </p>
               </div>
 

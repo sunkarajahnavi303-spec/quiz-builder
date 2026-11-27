@@ -1,5 +1,6 @@
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
 
 function Dashboard({
   isLoggedIn,
@@ -8,30 +9,55 @@ function Dashboard({
   userEmail,
   onNavigate
 }) {
-  const [allResults] = useState(() => {
-    try {
-      return JSON.parse(
-        localStorage.getItem('quizResults') || '[]'
-      )
-    } catch {
-      return []
-    }
-  })
+  const [results, setResults] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  // Get only the logged-in student's results
-  const results = allResults.filter(
-    (result) =>
-      result.studentEmail?.toLowerCase() ===
-      userEmail?.toLowerCase()
-  )
+  useEffect(() => {
+    async function fetchResults() {
+      if (!isLoggedIn) {
+        setResults([])
+        setLoading(false)
+        return
+      }
+
+      setLoading(true)
+
+      const { data: { user }, error: userError } =
+        await supabase.auth.getUser()
+
+      if (userError || !user) {
+        console.error('Unable to get logged-in user:', userError)
+        setResults([])
+        setLoading(false)
+        return
+      }
+
+      const { data, error } = await supabase
+        .from('quiz_results')
+        .select('*')
+        .eq('student_id', user.id)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching dashboard results:', error)
+        setResults([])
+      } else {
+        setResults(data || [])
+      }
+
+      setLoading(false)
+    }
+
+    fetchResults()
+  }, [isLoggedIn])
 
   const totalAttempts = results.length
 
   const getPercentage = (result) => {
     return Number(
       result.percentage ??
-      (result.totalMarks > 0
-        ? (result.score / result.totalMarks) * 100
+      (Number(result.total_marks) > 0
+        ? (Number(result.score) / Number(result.total_marks)) * 100
         : 0)
     )
   }
@@ -51,7 +77,7 @@ function Dashboard({
       ).toFixed(1)
     : 0
 
-  const recentResults = results.slice().reverse().slice(0, 3)
+  const recentResults = results.slice(0, 3)
 
   if (!isLoggedIn) {
     return (
@@ -99,19 +125,19 @@ function Dashboard({
 
         <div className="student-stat-card">
           <div className="stat-icon">📝</div>
-          <h2>{totalAttempts}</h2>
+          <h2>{loading ? '...' : totalAttempts}</h2>
           <p>Total Attempts</p>
         </div>
 
         <div className="student-stat-card">
           <div className="stat-icon">📈</div>
-          <h2>{averageScore}%</h2>
+          <h2>{loading ? '...' : `${averageScore}%`}</h2>
           <p>Average Score</p>
         </div>
 
         <div className="student-stat-card">
           <div className="stat-icon">🏆</div>
-          <h2>{highestScore}%</h2>
+          <h2>{loading ? '...' : `${highestScore}%`}</h2>
           <p>Highest Score</p>
         </div>
 
@@ -159,28 +185,36 @@ function Dashboard({
 
         <h3>🕒 Recent Quiz Activity</h3>
 
-        {recentResults.length === 0 ? (
+        {loading ? (
+          <div className="activity-empty">
+            <p>Loading recent activity...</p>
+          </div>
+        ) : recentResults.length === 0 ? (
           <div className="activity-empty">
             <p>
               No quiz activity yet. Start your first quiz!
             </p>
           </div>
         ) : (
-          recentResults.map((result, index) => (
+          recentResults.map((result) => (
             <div
               className="activity-card"
-              key={result.id || index}
+              key={result.id}
             >
 
               <div>
-                <h4>{result.quizTitle}</h4>
+                <h4>{result.quiz_title || 'Quiz'}</h4>
 
-                <p>{result.date}</p>
+                <p>
+                  {result.created_at
+                    ? new Date(result.created_at).toLocaleString()
+                    : 'Date unavailable'}
+                </p>
               </div>
 
               <div className="activity-score">
                 <strong>
-                  {result.score} / {result.totalMarks}
+                  {result.score} / {result.total_marks}
                 </strong>
 
                 <span>

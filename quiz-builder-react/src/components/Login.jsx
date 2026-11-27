@@ -1,56 +1,65 @@
 
 import { useState } from 'react'
+import { supabase } from '../lib/supabase'
 
 function Login({ onLogin, onNavigate }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  function handleLogin(e) {
+  async function handleLogin(e) {
     e.preventDefault()
+
+    if (loading) return
+
+    setLoading(true)
 
     const normalizedEmail = email.trim().toLowerCase()
 
-    // Fixed Admin credentials
-    const adminEmail = 'admin@quizbuilder.com'
-    const adminPassword = 'Admin@123'
-
-    if (
-      normalizedEmail === adminEmail &&
-      password === adminPassword
-    ) {
-      alert('Admin login successful!')
-
-      onLogin({
-        name: 'Administrator',
-        email: adminEmail,
-        role: 'admin'
+    try {
+      // Sign in using Supabase Authentication
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password
       })
 
-      return
+      if (error) {
+        throw error
+      }
+
+      // Get the user's profile and role
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('full_name, role')
+        .eq('id', data.user.id)
+        .single()
+
+      if (profileError || !profile) {
+        await supabase.auth.signOut()
+        throw new Error('User profile not found. Please contact the administrator.')
+      }
+
+      // Pass the authenticated user to App.jsx
+      onLogin({
+        id: data.user.id,
+        name: profile.full_name || data.user.email,
+        email: data.user.email,
+        role: profile.role
+      })
+
+      alert(
+        profile.role === 'admin'
+          ? 'Admin login successful!'
+          : 'Student login successful!'
+      )
+
+      setEmail('')
+      setPassword('')
+    } catch (error) {
+      alert(error.message || 'Login failed. Please try again.')
+    } finally {
+      setLoading(false)
     }
-
-    // Student login
-    const users = JSON.parse(
-      localStorage.getItem('quizUsers') || '[]'
-    )
-
-    const validUser = users.find(
-      (user) =>
-        user.email === normalizedEmail &&
-        user.password === password &&
-        user.role === 'student'
-    )
-
-    if (validUser) {
-      alert('Student login successful! Welcome ' + validUser.name)
-
-      onLogin(validUser)
-    } else {
-      alert('Invalid email or password. Please try again.')
-    }
-
-    setEmail('')
-    setPassword('')
   }
 
   return (
@@ -80,8 +89,12 @@ function Login({ onLogin, onNavigate }) {
           required
         />
 
-        <button type="submit" className="login-button">
-          Login
+        <button
+          type="submit"
+          className="login-button"
+          disabled={loading}
+        >
+          {loading ? 'Logging in...' : 'Login'}
         </button>
       </form>
 
