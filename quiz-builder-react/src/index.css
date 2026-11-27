@@ -1,0 +1,140 @@
+
+/* Overall page */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: linear-gradient(135deg, #667eea, #764ba2, #f093fb);
+  color: #292344;
+}
+
+/* Main React container */
+#root {
+  min-height: 100vh;
+  width: 100%;
+  text-align: center;
+}
+
+/* Navigation bar */
+nav {
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(12px);
+  color: white;
+}
+
+/* Main content */
+.app-container {
+  width: 90%;
+  max-width: 1000px;
+  min-height: 75vh;
+  margin: 35px auto;
+  padding: 35px;
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 22px;
+  box-shadow: 0 15px 40px rgba(30, 20, 70, 0.2);
+}
+
+/* Headings */
+h1, h2, h3 {
+  color: #49317d;
+  margin-bottom: 18px;
+}
+
+h1 {
+  font-size: 34px;
+}
+
+h2 {
+  font-size: 27px;
+}
+
+h3 {
+  font-size: 21px;
+}
+
+/* Paragraphs */
+p {
+  line-height: 1.6;
+  margin: 12px 0;
+}
+
+/* Buttons */
+button {
+  padding: 12px 22px;
+  margin: 8px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #667eea, #9b59b6);
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(102, 126, 234, 0.35);
+}
+
+/* Input fields */
+input, textarea, select {
+  display: block;
+  width: 100%;
+  max-width: 600px;
+  margin: 12px auto;
+  padding: 13px 15px;
+  border: 1px solid #d8c9f0;
+  border-radius: 10px;
+  background: white;
+  color: #292344;
+  font-size: 15px;
+  outline: none;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+}
+
+textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+/* Lists */
+ul {
+  list-style: none;
+  padding: 0;
+}
+
+li {
+  margin: 12px 0;
+}
+
+/* Responsive design */
+@media (max-width: 600px) {
+  .app-container {
+    width: 94%;
+    padding: 20px 14px;
+    margin: 18px auto;
+  }
+
+  h1 {
+    font-size: 27px;
+  }
+
+  h2 {
+    font-size: 23px;
+  }
+
+  button {
+    max-width: 100%;
+  }
+}
